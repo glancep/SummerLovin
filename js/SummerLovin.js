@@ -7,7 +7,7 @@ $(document).ready(function () {
     const maxLives = 3;
 
     // --- State ---
-    let mode = "pencil"; // "pencil" or "eraser"
+    let pencilMode = true;
     let numbers, decoys;
     let livesLeft = maxLives;
     let gameSeed = null;
@@ -54,30 +54,40 @@ $(document).ready(function () {
 
     // --- Toggle mode function and background color ---
     function toggleMode() {
-        mode = (mode === "pencil") ? "eraser" : "pencil";
-        $('#toggle-mode').html(mode === "pencil" ? "✏️" : "🧽");
-        if (mode === "pencil") {
+        pencilMode = !pencilMode;
+        $('#toggle-mode').html(pencilMode ? "✏️" : "🧽");
+        if (pencilMode) {
             $('body').css('background', '#fffbe7');
         } else {
             $('body').css('background', '#e3f2fd');
         }
     }
 
+    $('#toggle-current-sum').on('change', function () {
+        $('#game-grid').toggleClass('disable-current-sum');
+    });
+
     // Set initial background
     toggleMode();
 
     // --- Toggle mode by clicking on background (not grid/board) ---
+    // Allow toggle if clicking on body, except if inside #game-grid and NOT on a solved cell
     $('body').on('click', function (e) {
-        // Only toggle if not clicking inside #game-grid or on a button/input/popup
+        $target = $(e.target);
         if (
-            $(e.target).closest('#game-grid').length === 0 &&
-            $(e.target).closest('button').length === 0 &&
-            $(e.target).closest('#seed-popup').length === 0 &&
-            $(e.target).closest('#game-over-popup').length === 0 &&
-            $(e.target).closest('input').length === 0
+            $target.closest('button').length === 0 &&
+            $target.closest('#settings-popup').length === 0 &&
+            $target.closest('#game-over-popup').length === 0 &&
+            $target.closest('input').length === 0
         ) {
             toggleMode();
         }
+    });
+
+    // Win popup restart button
+    $('body').on('click', '#win-restart-btn', function () {
+        $('#game-win-popup').hide();
+        newRandomSeedAndStart();
     });
 
     // --- UI: Settings (gear) Button ---
@@ -85,12 +95,12 @@ $(document).ready(function () {
         $('#seed-input').val(gameSeed).prop('readonly', true);
         $('#apply-seed-btn').hide();
         $('#edit-seed-btn').show();
-        $('#seed-popup').fadeIn(150);
+        $('#settings-popup').fadeIn(150);
     });
 
-    // --- UI: Seed Popup Buttons ---
-    $('#close-seed-btn').on('click', function () {
-        $('#seed-popup').fadeOut(150);
+    // --- UI: Settings Popup Buttons ---
+    $('#close-settings-btn').on('click', function () {
+        $('#settings-popup').fadeOut(150);
     });
     $('#copy-seed-btn').on('click', function () {
         navigator.clipboard.writeText($('#seed-input').val());
@@ -113,7 +123,7 @@ $(document).ready(function () {
         gridSize = parsed.size;
         gameSeed = val;
         lastSeed = val;
-        $('#seed-popup').fadeOut(150);
+        $('#settings-popup').fadeOut(150);
         startGame(true);
     });
     $('#randomize-seed-btn').on('click', function () {
@@ -129,7 +139,7 @@ $(document).ready(function () {
         $('#seed-input').prop('readonly', true);
         $('#apply-seed-btn').hide();
         $('#edit-seed-btn').show();
-        $('#seed-popup').fadeOut(150);
+        $('#settings-popup').fadeOut(150);
         startGame(false);
     });
 
@@ -346,19 +356,19 @@ $(document).ready(function () {
     }
 
     function bindCellClicks() {
-        $('#game-grid').off('click').on('click', '.grid-cell', function () {
+        $('#game-grid').off('click').on('click', '.grid-cell', function (e) {
             if (livesLeft <= 0) return;
             const $cell = $(this);
             if ($cell.hasClass('selected') || $cell.hasClass('erased')) return; // Already acted on
 
             const isDecoy = $cell.data('decoy') === true || $cell.data('decoy') === "true";
             let correct = false;
-            if (mode === "pencil") {
+            if (pencilMode) {
                 if (!isDecoy) {
                     $cell.addClass('selected');
                     correct = true;
                 }
-            } else if (mode === "eraser") {
+            } else if (!pencilMode) {
                 if (isDecoy) {
                     $cell.addClass('erased');
                     correct = true;
@@ -369,9 +379,13 @@ $(document).ready(function () {
                 loseLife();
             } else {
                 // Check for solved rows/cols
+                $cell.addClass('correct');
                 checkSolvedRowsAndCols();
             }
             updateCurrentSums();
+
+            // Prevent toggle when an active cell is clicked
+            e.stopPropagation();
         });
     }
 
@@ -462,5 +476,147 @@ $(document).ready(function () {
 
     function showGameOver() {
         $('#game-over-popup').show();
+    }
+
+    // Show confetti on top of win popup
+    function showConfetti() {
+        const $canvas = $('canvas.confetti-canvas');
+
+        const canvas = $canvas[0];
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const ctx = canvas.getContext('2d');
+
+        // Confetti parameters
+        const confettiCount = 120;
+        const colors = ['#ffb300', '#ff5252', '#4fc3f7', '#81c784', '#ffd54f', '#f06292', '#fff176'];
+        const confetti = [];
+
+        for (let i = 0; i < confettiCount; i++) {
+            confetti.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * -canvas.height,
+                r: Math.random() * 6 + 4,
+                d: Math.random() * confettiCount,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                tilt: Math.random() * 10 - 10,
+                tiltAngleIncremental: (Math.random() * 0.07) + .05,
+                tiltAngle: 0
+            });
+        }
+
+        let angle = 0;
+        let tiltAngle = 0;
+        let animationFrame;
+
+        function drawConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            angle += 0.01;
+            tiltAngle += 0.1;
+
+            for (let i = 0; i < confetti.length; i++) {
+                let c = confetti[i];
+                c.tiltAngle += c.tiltAngleIncremental;
+                c.y += (Math.cos(angle + c.d) + 3 + c.r / 2) / 2;
+                c.x += Math.sin(angle);
+                c.tilt = Math.sin(c.tiltAngle - (i % 3)) * 15;
+
+                ctx.beginPath();
+                ctx.lineWidth = c.r;
+                ctx.strokeStyle = c.color;
+                ctx.moveTo(c.x + c.tilt + c.r / 3, c.y);
+                ctx.lineTo(c.x + c.tilt, c.y + c.tilt + c.r / 5);
+                ctx.stroke();
+            }
+
+            // Remove confetti that falls off screen and add new ones
+            for (let i = 0; i < confetti.length; i++) {
+                if (confetti[i].y > canvas.height + 20) {
+                    confetti[i].x = Math.random() * canvas.width;
+                    confetti[i].y = -10;
+                }
+            }
+
+            animationFrame = requestAnimationFrame(drawConfetti);
+        }
+
+        drawConfetti();
+
+        // Remove confetti after 2.5 seconds
+        setTimeout(() => {
+            cancelAnimationFrame(animationFrame);
+            $canvas.fadeOut(400, function () { $(this).remove(); });
+        }, 2500);
+    }
+
+    // Add this function to check if the board is fully solved
+    function isBoardSolved() {
+        for (let row = 0; row < gridSize; row++) {
+            for (let col = 0; col < gridSize; col++) {
+                const isDecoy = decoys[row][col];
+                const $cell = $(`.grid-cell[data-row=${row}][data-col=${col}]`);
+                if (!isDecoy && !$cell.hasClass('selected')) return false;
+                if (isDecoy && !$cell.hasClass('erased')) return false;
+            }
+        }
+        return true;
+    }
+
+    // --- Modify checkSolvedRowsAndCols to trigger confetti and win popup ---
+    function checkSolvedRowsAndCols() {
+        let anySolved = false;
+        // Check each row
+        for (let row = 0; row < gridSize; row++) {
+            let solved = true;
+            for (let col = 0; col < gridSize; col++) {
+                const isDecoy = decoys[row][col];
+                const $cell = $(`.grid-cell[data-row=${row}][data-col=${col}]`);
+                if (!isDecoy && !$cell.hasClass('selected')) {
+                    solved = false;
+                    break;
+                }
+                if (isDecoy && !$cell.hasClass('erased')) {
+                    solved = false;
+                    break;
+                }
+            }
+            // If solved and not already cleared
+            const $sumCell = $(`.sum-cell.row-sum`).eq(row);
+            if (solved && $sumCell.text() !== "") {
+                $sumCell.text("");
+                flashRowOrCol(row, null);
+                anySolved = true;
+            }
+        }
+        // Check each column
+        for (let col = 0; col < gridSize; col++) {
+            let solved = true;
+            for (let row = 0; row < gridSize; row++) {
+                const isDecoy = decoys[row][col];
+                const $cell = $(`.grid-cell[data-row=${row}][data-col=${col}]`);
+                if (!isDecoy && !$cell.hasClass('selected')) {
+                    solved = false;
+                    break;
+                }
+                if (isDecoy && !$cell.hasClass('erased')) {
+                    solved = false;
+                    break;
+                }
+            }
+            // If solved and not already cleared
+            const $sumCell = $(`.sum-cell.col-sum`).eq(col);
+            if (solved && $sumCell.text() !== "") {
+                $sumCell.text("");
+                flashRowOrCol(null, col);
+                anySolved = true;
+            }
+        }
+        // If any row/col solved, check for full board solved
+        if (anySolved && isBoardSolved()) {
+            setTimeout(() => {
+                showConfetti();
+                $('#game-win-popup').fadeIn(200);
+            }, 550);
+        }
     }
 });

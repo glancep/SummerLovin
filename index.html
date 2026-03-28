@@ -12,7 +12,7 @@
             font-family: 'Inter', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
             font-size: 1rem;
             line-height: 1.5;
-            background: #fffbe7; /* Pencil mode default */
+            background: #fffbe7;
             transition: background 0.3s;
         }
         h1 {
@@ -20,9 +20,31 @@
             margin: 0.5rem;
             text-align: center;
         }
+        .controls {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            font-size: 1.2rem;
+            padding: 0.5em 1em;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            background: #fff;
+            cursor: pointer;
+            margin-right: 0.5em;
+            transition: background 0.2s;
+        }
+        .btn-yellow {
+            background: #ffe082;
+        }
+        #lives {
+            font-size: 1.5rem;
+            vertical-align: middle;
+            margin-left: 1em;
+            display: inline-block;
+        }
         #game-grid {
             display: grid;
-            /* grid-template-columns and rows set dynamically by JS */
             gap: 4px;
             width: min(90vw, 90vh);
             height: min(90vw, 90vh);
@@ -55,7 +77,6 @@
         }
         .sum-cell {
             background: #ffe082;
-            color: #7c5700;
             color: rgba(128, 100, 0, 0.5);
             font-weight: 900;
             border-radius: 4px;
@@ -73,7 +94,7 @@
         }
         */
         .grid-cell.selected {
-            background: #b2f2bb !important; /* green for correct selection */
+            background: #b2f2bb !important;
             color: #155724 !important;
         }
         .grid-cell.erased {
@@ -89,14 +110,42 @@
         }
         .current-sum {
             position: absolute;
-            top: 0px;
-            right: 4px;
-            font-size: 0.7em;
-            color: #000;
+            top: -2px;
+            right: 0px;
+            font-size: 0.6em;
+            color: #1976d2;
             font-weight: 400;
             font-family: 'Inter', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
-            opacity: 1;
+            opacity: 0.85;
             letter-spacing: 0.01em;
+        }
+        #game-grid.disable-current-sum .current-sum {
+            display: none;
+        }
+        .popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.4);
+            align-items: center;
+            justify-content: center;
+        }
+        .popup-content {
+            background: #fff;
+            border-radius: 12px;
+            padding: 2em 2em;
+            text-align: center;
+            max-width: 90vw;
+            margin: auto;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+        }
+        .confetti-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 4000;
         }
         @media (max-width: 600px), (max-height: 600px) {
             #game-grid {
@@ -113,35 +162,47 @@
 </head>
 <body>
     <h1>Welcome to SummerLovin</h1>
-    <div style="text-align:center; margin-bottom:1rem;">
-        <button id="settings-btn" style="font-size:1.2rem; padding:0.5em 1em; border-radius:6px; border:1px solid #ccc; background:#fff; cursor:pointer; margin-right:0.5em;">⚙️</button>
-        <button id="toggle-mode" style="font-size:1.5rem; padding:0.5em 1em; border-radius:6px; border:1px solid #ccc; background:#fff; cursor:pointer;"></button>
-        <div id="lives" style="font-size:1.5rem; vertical-align:middle; margin-left:1em;">❤️❤️❤️</div>
+    <div class="controls">
+        <button id="toggle-mode" class="btn" style="font-size:1.5rem;"></button>
+        <button id="settings-btn" class="btn">⚙️</button>
+        <div id="lives">❤️❤️❤️</div>
     </div>
     <div id="game-grid"></div>
+    <div style="height: 2em;"></div>
     <!-- Popup for game over -->
-    <div id="game-over-popup" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); z-index:1000; align-items:center; justify-content:center;">
-        <div style="background:#fff; border-radius:12px; padding:2em 2em; text-align:center; max-width:90vw; margin:auto; box-shadow:0 4px 24px rgba(0,0,0,0.15);">
+    <div id="game-over-popup" class="popup-overlay" style="z-index:1000;">
+        <div class="popup-content">
             <div style="font-size:2rem; margin-bottom:1rem;">Oh, snap—guess your summer love left you! 💔</div>
-            <button id="restart-btn" style="font-size:1.2rem; padding:0.5em 1.5em; border-radius:8px; border:1px solid #ccc; background:#ffe082; cursor:pointer;">Restart</button>
+            <button id="restart-btn" class="btn btn-yellow" style="font-size:1.2rem; border-radius:8px;">Restart</button>
+        </div>
+    </div>
+    <!-- Popup for win -->
+    <canvas class="confetti-canvas"></canvas>
+    <div id="game-win-popup" class="popup-overlay" style="z-index:3000;">
+        <div class="popup-content">
+            <h1>🌞 Summer Love Success! 💖</h1>
+            <span style="font-size:1.2rem;">You swept them off their feet!</span>
+            <button id="win-restart-btn" class="btn btn-yellow" style="font-size:1.2rem; border-radius:8px;">Play Again</button>
         </div>
     </div>
     <!-- Popup for settings/seed -->
-    <div id="seed-popup" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); z-index:2000; align-items:center; justify-content:center;">
-        <div style="background:#fff; border-radius:12px; padding:2em 2em; text-align:center; max-width:90vw; margin:auto; box-shadow:0 4px 24px rgba(0,0,0,0.15);">
-            <div style="font-size:1.2rem; margin-bottom:1rem;">Game Seed</div>
+    <div id="settings-popup" class="popup-overlay" style="z-index:2000;">
+        <div class="popup-content">
+            <h1>Settings</h1>
+            <label style="margin-left:1em; font-size:0.95em; user-select:none;">
+                <input type="checkbox" id="toggle-current-sum" checked style="vertical-align:middle; margin-right:0.3em;">
+                Show current sums
+            </label>
             <input id="seed-input" style="font-size:1.1rem; width:80%; padding:0.5em; margin-bottom:1em;" readonly />
             <br>
-            <button id="copy-seed-btn" style="font-size:1rem; margin-right:1em; border-radius:6px; border:1px solid #ccc; background:#ffe082; cursor:pointer;">Copy</button>
-            <button id="edit-seed-btn" style="font-size:1rem; margin-right:1em; border-radius:6px; border:1px solid #ccc; background:#ffe082; cursor:pointer;">Edit</button>
-            <button id="apply-seed-btn" style="font-size:1rem; margin-right:1em; border-radius:6px; border:1px solid #ccc; background:#ffe082; cursor:pointer; display:none;">Apply</button>
-            <button id="randomize-seed-btn" style="font-size:1rem; margin-right:1em; border-radius:6px; border:1px solid #ccc; background:#ffe082; cursor:pointer;">Randomize</button>
-            <button id="close-seed-btn" style="font-size:1rem; border-radius:6px; border:1px solid #ccc; background:#fff; cursor:pointer;">Close</button>
+            <button id="copy-seed-btn" class="btn btn-yellow" style="font-size:1rem;">Copy</button>
+            <button id="edit-seed-btn" class="btn btn-yellow" style="font-size:1rem;">Edit</button>
+            <button id="apply-seed-btn" class="btn btn-yellow" style="font-size:1rem; display:none;">Apply</button>
+            <button id="randomize-seed-btn" class="btn btn-yellow" style="font-size:1rem;">Randomize</button>
+            <button id="close-settings-btn" class="btn" style="font-size:1rem;">Close</button>
         </div>
     </div>
-    <!-- jQuery (latest version from Google CDN) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <!-- SummerLovin JavaScript file -->
     <script src="js/SummerLovin.js"></script>
 </body>
 </html>
