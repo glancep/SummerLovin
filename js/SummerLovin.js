@@ -45,11 +45,39 @@ $(document).ready(function () {
     // --- UI: Toggle Button ---
     $('#toggle-mode')
         .css({ background: "#fff" })
-        .on('click', function () {
-            mode = (mode === "pencil") ? "eraser" : "pencil";
-            $(this).html(mode === "pencil" ? "✏️" : "🧽");
+        .on('click', function (e) {
+            e.stopPropagation();
+            toggleMode();
         })
         .html("✏️");
+
+    // --- Toggle mode function and background color ---
+    function toggleMode() {
+        mode = (mode === "pencil") ? "eraser" : "pencil";
+        $('#toggle-mode').html(mode === "pencil" ? "✏️" : "🧽");
+        if (mode === "pencil") {
+            $('body').css('background', '#fffbe7');
+        } else {
+            $('body').css('background', '#e3f2fd');
+        }
+    }
+
+    // Set initial background
+    toggleMode();
+
+    // --- Toggle mode by clicking on background (not grid/board) ---
+    $('body').on('click', function (e) {
+        // Only toggle if not clicking inside #game-grid or on a button/input/popup
+        if (
+            $(e.target).closest('#game-grid').length === 0 &&
+            $(e.target).closest('button').length === 0 &&
+            $(e.target).closest('#seed-popup').length === 0 &&
+            $(e.target).closest('#game-over-popup').length === 0 &&
+            $(e.target).closest('input').length === 0
+        ) {
+            toggleMode();
+        }
+    });
 
     // --- UI: Seed Button ---
     $('#seed-btn').on('click', function () {
