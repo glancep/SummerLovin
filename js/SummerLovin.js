@@ -1,6 +1,6 @@
 $(document).ready(function () {
     // --- Config ---
-    const gridSize = 7;
+    let gridSize = 7; // Now let, not const
     const decoyProbability = 0.25;
     const easyDecoyProbability = 0.75;
     let easyRowColDecoyProbability = 0.3;
@@ -24,15 +24,16 @@ $(document).ready(function () {
     }
 
     // --- Seed helpers ---
-    function makeSeedString(prob, seed) {
-        return `${prob}:${seed}`;
+    function makeSeedString(prob, size, seed) {
+        return `${prob}:${size}:${seed}`;
     }
     function parseSeedString(seedStr) {
         const parts = seedStr.split(":");
-        if (parts.length !== 2) return null;
+        if (parts.length !== 3) return null;
         const prob = parseFloat(parts[0]);
-        if (isNaN(prob)) return null;
-        return { prob, seed: parts[1] };
+        const size = parseInt(parts[1], 10);
+        if (isNaN(prob) || isNaN(size)) return null;
+        return { prob, size, seed: parts[2] };
     }
     function randomSeed() {
         // 8-char alphanumeric
@@ -79,13 +80,15 @@ $(document).ready(function () {
         }
     });
 
-    // --- UI: Seed Button ---
-    $('#seed-btn').on('click', function () {
+    // --- UI: Settings (gear) Button ---
+    $('#settings-btn').on('click', function () {
         $('#seed-input').val(gameSeed).prop('readonly', true);
         $('#apply-seed-btn').hide();
         $('#edit-seed-btn').show();
         $('#seed-popup').fadeIn(150);
     });
+
+    // --- UI: Seed Popup Buttons ---
     $('#close-seed-btn').on('click', function () {
         $('#seed-popup').fadeOut(150);
     });
@@ -103,14 +106,31 @@ $(document).ready(function () {
         const val = $('#seed-input').val();
         const parsed = parseSeedString(val);
         if (!parsed) {
-            alert("Invalid seed format. Example: 0.3:abcd1234");
+            alert("Invalid seed format. Example: 0.3:7:abcd1234");
             return;
         }
         easyRowColDecoyProbability = parsed.prob;
+        gridSize = parsed.size;
         gameSeed = val;
         lastSeed = val;
         $('#seed-popup').fadeOut(150);
         startGame(true);
+    });
+    $('#randomize-seed-btn').on('click', function () {
+        // Generate a new random seed, probability, and size, apply and close popup
+        const size = Math.floor(Math.random() * 4) + 7;
+        const seed = randomSeed();
+        const prob = Math.round((Math.random() * 0.8 + 0.1) * 10) / 10;
+        easyRowColDecoyProbability = prob;
+        gridSize = size;
+        gameSeed = makeSeedString(easyRowColDecoyProbability, gridSize, seed);
+        lastSeed = gameSeed;
+        $('#seed-input').val(gameSeed);
+        $('#seed-input').prop('readonly', true);
+        $('#apply-seed-btn').hide();
+        $('#edit-seed-btn').show();
+        $('#seed-popup').fadeOut(150);
+        startGame(false);
     });
 
     // --- UI: Restart Button ---
@@ -121,11 +141,13 @@ $(document).ready(function () {
 
     // --- Functions ---
     function newRandomSeedAndStart() {
-        // Generate a random seed and a random easyRowColDecoyProbability between 0.1 and 0.9 (rounded to 1 decimal)
+        // Random grid size between 7 and 10
+        const size = Math.floor(Math.random() * 4) + 7;
         const seed = randomSeed();
         const prob = Math.round((Math.random() * 0.8 + 0.1) * 10) / 10;
         easyRowColDecoyProbability = prob;
-        gameSeed = makeSeedString(easyRowColDecoyProbability, seed);
+        gridSize = size;
+        gameSeed = makeSeedString(easyRowColDecoyProbability, gridSize, seed);
         lastSeed = gameSeed;
         startGame(false);
     }
@@ -139,15 +161,18 @@ $(document).ready(function () {
         }
         if (!seedObj) {
             // fallback
+            const size = Math.floor(Math.random() * 4) + 7;
             const seed = randomSeed();
             const prob = Math.round((Math.random() * 0.8 + 0.1) * 10) / 10;
             easyRowColDecoyProbability = prob;
-            gameSeed = makeSeedString(easyRowColDecoyProbability, seed);
+            gridSize = size;
+            gameSeed = makeSeedString(easyRowColDecoyProbability, gridSize, seed);
             lastSeed = gameSeed;
             seedObj = parseSeedString(gameSeed);
         }
         easyRowColDecoyProbability = seedObj.prob;
-        gameSeed = makeSeedString(easyRowColDecoyProbability, seedObj.seed);
+        gridSize = seedObj.size;
+        gameSeed = makeSeedString(easyRowColDecoyProbability, gridSize, seedObj.seed);
         lastSeed = gameSeed;
 
         // Use seeded RNG
