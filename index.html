@@ -65,6 +65,19 @@
             background: #f8bbd0;
             color: #a00040;
         }
+        .grid-cell.selected {
+            background: #b2f2bb !important; /* green for correct selection */
+            color: #155724 !important;
+        }
+        .grid-cell.faded {
+            color: transparent !important;
+            transition: color 0.3s;
+        }
+        .grid-cell.flash-wrong {
+            background: #ff5252 !important;
+            color: #fff !important;
+            transition: background 0.2s;
+        }
         @media (max-width: 600px), (max-height: 600px) {
             #game-grid {
                 width: min(98vw, 70vh);
@@ -80,6 +93,11 @@
 </head>
 <body>
     <h1>Welcome to SummerLovin</h1>
+    <div style="text-align:center; margin-bottom:1rem;">
+        <button id="toggle-mode" style="font-size:1.2rem; padding:0.5em 1em; border-radius:6px; border:1px solid #ccc; background:#ffe082; cursor:pointer;">
+            ✅ Check Mode
+        </button>
+    </div>
     <div id="game-grid"></div>
     <!-- jQuery (latest version from Google CDN) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>

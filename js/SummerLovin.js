@@ -5,16 +5,31 @@ $(document).ready(function () {
     const easyDecoyProbability = 0.75;
     const easyRowColDecoyProbability = 0.3;
 
+    // --- State ---
+    let mode = "check"; // "check" or "x"
+    let numbers, decoys;
+
     // --- Main ---
-    const numbers = generateNumbers(gridSize);
-    const { easyRows, easyCols } = generateEasyRowsCols(gridSize, easyRowColDecoyProbability);
-    const decoys = generateDecoyMap(gridSize, easyRows, easyCols, decoyProbability, easyDecoyProbability);
-    ensureAtLeastOneRealPerRowCol(decoys);
-    const rowSums = calculateRowSums(numbers, decoys);
-    const colSums = calculateColSums(numbers, decoys);
-    renderGrid($('#game-grid'), gridSize, numbers, decoys, rowSums, colSums);
+    startGame();
+
+    // --- UI: Toggle Button ---
+    $('#toggle-mode').on('click', function () {
+        mode = (mode === "check") ? "x" : "check";
+        $(this).html(mode === "check" ? "✅ Check Mode" : "❌ X Mode");
+    });
 
     // --- Functions ---
+    function startGame() {
+        numbers = generateNumbers(gridSize);
+        const { easyRows, easyCols } = generateEasyRowsCols(gridSize, easyRowColDecoyProbability);
+        decoys = generateDecoyMap(gridSize, easyRows, easyCols, decoyProbability, easyDecoyProbability);
+        ensureAtLeastOneRealPerRowCol(decoys);
+        const rowSums = calculateRowSums(numbers, decoys);
+        const colSums = calculateColSums(numbers, decoys);
+        renderGrid($('#game-grid'), gridSize, numbers, decoys, rowSums, colSums);
+        bindCellClicks();
+    }
+
     function generateNumbers(size) {
         const arr = [];
         for (let row = 0; row < size; row++) {
@@ -110,9 +125,41 @@ $(document).ready(function () {
                     $container.append(`<div class="sum-cell row-sum">${rowSums[row - 1]}</div>`);
                 } else {
                     const isDecoy = decoys[row - 1][col - 1];
-                    $container.append(`<div class="grid-cell${isDecoy ? ' decoy' : ''}">${numbers[row - 1][col - 1]}</div>`);
+                    // Add data attributes for row/col and decoy status
+                    $container.append(
+                        `<div class="grid-cell${isDecoy ? ' decoy' : ''}" data-row="${row - 1}" data-col="${col - 1}" data-decoy="${isDecoy}">${numbers[row - 1][col - 1]}</div>`
+                    );
                 }
             }
         }
+    }
+
+    function bindCellClicks() {
+        $('#game-grid').off('click').on('click', '.grid-cell', function () {
+            const $cell = $(this);
+            if ($cell.hasClass('selected') || $cell.hasClass('faded')) return; // Already acted on
+
+            const isDecoy = $cell.data('decoy') === true || $cell.data('decoy') === "true";
+            if (mode === "check") {
+                if (!isDecoy) {
+                    $cell.addClass('selected');
+                } else {
+                    flashWrong($cell);
+                }
+            } else if (mode === "x") {
+                if (isDecoy) {
+                    $cell.addClass('faded').text('');
+                } else {
+                    flashWrong($cell);
+                }
+            }
+        });
+    }
+
+    function flashWrong($cell) {
+        $cell.addClass('flash-wrong');
+        setTimeout(() => {
+            $cell.removeClass('flash-wrong');
+        }, 300);
     }
 });
