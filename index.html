@@ -44,12 +44,13 @@
             height: 100%;
         }
         .grid-cell {
-            background: #fff;
+            background: #fed;
             border-radius: 4px;
             font-size: 1.3rem;
             font-weight: bold;
             color: #333;
             user-select: none;
+            transition: color 0.3s, background 0.3s;
         }
         .sum-cell {
             background: #ffe082;
@@ -74,9 +75,8 @@
             background: #b2f2bb !important; /* green for correct selection */
             color: #155724 !important;
         }
-        .grid-cell.faded {
+        .grid-cell.erased {
             color: transparent !important;
-            transition: color 0.3s;
         }
         .grid-cell.flash-wrong {
             background: #ff5252 !important;
@@ -84,7 +84,7 @@
             transition: background 0.2s;
         }
         .grid-cell.solved {
-            background: #b3e5fc !important;
+            background: #fff !important;
         }
         .current-sum {
             position: absolute;
