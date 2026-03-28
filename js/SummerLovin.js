@@ -518,7 +518,6 @@ $(document).ready(function () {
                 let c = confetti[i];
                 c.tiltAngle += c.tiltAngleIncremental;
                 c.y += (Math.cos(angle + c.d) + 3 + c.r / 2) / 2;
-                c.x += Math.sin(angle);
                 c.tilt = Math.sin(c.tiltAngle - (i % 3)) * 15;
 
                 ctx.beginPath();
@@ -529,24 +528,14 @@ $(document).ready(function () {
                 ctx.stroke();
             }
 
-            // Remove confetti that falls off screen and add new ones
-            for (let i = 0; i < confetti.length; i++) {
-                if (confetti[i].y > canvas.height + 20) {
-                    confetti[i].x = Math.random() * canvas.width;
-                    confetti[i].y = -10;
-                }
-            }
-
             animationFrame = requestAnimationFrame(drawConfetti);
         }
 
         drawConfetti();
 
-        // Remove confetti after 2.5 seconds
         setTimeout(() => {
             cancelAnimationFrame(animationFrame);
-            $canvas.fadeOut(400, function () { $(this).remove(); });
-        }, 2500);
+        }, 10000);
     }
 
     // Add this function to check if the board is fully solved
