@@ -467,4 +467,152 @@ $(document).ready(function () {
     function showGameOver() {
         $('#game-over-popup').show();
     }
+
+    // Show confetti on top of win popup
+    function showConfetti() {
+        const $canvas = $('canvas.confetti-canvas');
+
+        const canvas = $canvas[0];
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const ctx = canvas.getContext('2d');
+
+        // Confetti parameters
+        const confettiCount = 120;
+        const colors = ['#ffb300', '#ff5252', '#4fc3f7', '#81c784', '#ffd54f', '#f06292', '#fff176'];
+        const confetti = [];
+
+        for (let i = 0; i < confettiCount; i++) {
+            confetti.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * -canvas.height,
+                r: Math.random() * 6 + 4,
+                d: Math.random() * confettiCount,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                tilt: Math.random() * 10 - 10,
+                tiltAngleIncremental: (Math.random() * 0.07) + .05,
+                tiltAngle: 0
+            });
+        }
+
+        let angle = 0;
+        let tiltAngle = 0;
+        let animationFrame;
+
+        function drawConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            angle += 0.01;
+            tiltAngle += 0.1;
+
+            for (let i = 0; i < confetti.length; i++) {
+                let c = confetti[i];
+                c.tiltAngle += c.tiltAngleIncremental;
+                c.y += (Math.cos(angle + c.d) + 3 + c.r / 2) / 2;
+                c.x += Math.sin(angle);
+                c.tilt = Math.sin(c.tiltAngle - (i % 3)) * 15;
+
+                ctx.beginPath();
+                ctx.lineWidth = c.r;
+                ctx.strokeStyle = c.color;
+                ctx.moveTo(c.x + c.tilt + c.r / 3, c.y);
+                ctx.lineTo(c.x + c.tilt, c.y + c.tilt + c.r / 5);
+                ctx.stroke();
+            }
+
+            // Remove confetti that falls off screen and add new ones
+            for (let i = 0; i < confetti.length; i++) {
+                if (confetti[i].y > canvas.height + 20) {
+                    confetti[i].x = Math.random() * canvas.width;
+                    confetti[i].y = -10;
+                }
+            }
+
+            animationFrame = requestAnimationFrame(drawConfetti);
+        }
+
+        drawConfetti();
+
+        // Remove confetti after 2.5 seconds
+        setTimeout(() => {
+            cancelAnimationFrame(animationFrame);
+            $canvas.fadeOut(400, function () { $(this).remove(); });
+        }, 2500);
+    }
+
+    // Add this function to check if the board is fully solved
+    function isBoardSolved() {
+        for (let row = 0; row < gridSize; row++) {
+            for (let col = 0; col < gridSize; col++) {
+                const isDecoy = decoys[row][col];
+                const $cell = $(`.grid-cell[data-row=${row}][data-col=${col}]`);
+                if (!isDecoy && !$cell.hasClass('selected')) return false;
+                if (isDecoy && !$cell.hasClass('erased')) return false;
+            }
+        }
+        return true;
+    }
+
+    // Win popup restart button
+    $('body').on('click', '#win-restart-btn', function () {
+        $('#game-win-popup').hide();
+        newRandomSeedAndStart();
+    });
+
+    // --- Modify checkSolvedRowsAndCols to trigger confetti and win popup ---
+    function checkSolvedRowsAndCols() {
+        let anySolved = false;
+        // Check each row
+        for (let row = 0; row < gridSize; row++) {
+            let solved = true;
+            for (let col = 0; col < gridSize; col++) {
+                const isDecoy = decoys[row][col];
+                const $cell = $(`.grid-cell[data-row=${row}][data-col=${col}]`);
+                if (!isDecoy && !$cell.hasClass('selected')) {
+                    solved = false;
+                    break;
+                }
+                if (isDecoy && !$cell.hasClass('erased')) {
+                    solved = false;
+                    break;
+                }
+            }
+            // If solved and not already cleared
+            const $sumCell = $(`.sum-cell.row-sum`).eq(row);
+            if (solved && $sumCell.text() !== "") {
+                $sumCell.text("");
+                flashRowOrCol(row, null);
+                anySolved = true;
+            }
+        }
+        // Check each column
+        for (let col = 0; col < gridSize; col++) {
+            let solved = true;
+            for (let row = 0; row < gridSize; row++) {
+                const isDecoy = decoys[row][col];
+                const $cell = $(`.grid-cell[data-row=${row}][data-col=${col}]`);
+                if (!isDecoy && !$cell.hasClass('selected')) {
+                    solved = false;
+                    break;
+                }
+                if (isDecoy && !$cell.hasClass('erased')) {
+                    solved = false;
+                    break;
+                }
+            }
+            // If solved and not already cleared
+            const $sumCell = $(`.sum-cell.col-sum`).eq(col);
+            if (solved && $sumCell.text() !== "") {
+                $sumCell.text("");
+                flashRowOrCol(null, col);
+                anySolved = true;
+            }
+        }
+        // If any row/col solved, check for full board solved
+        if (anySolved && isBoardSolved()) {
+            setTimeout(() => {
+                showConfetti();
+                $('#game-win-popup').fadeIn(200);
+            }, 550);
+        }
+    }
 });
