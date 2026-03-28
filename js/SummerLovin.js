@@ -238,7 +238,7 @@ $(document).ready(function () {
                 } else if (row === 0) {
                     // Column sum cell with current sum span
                     $container.append(
-                        `<div class="sum-cell col-sum" data-col="${col - 1}" style="position:relative;">
+                        `<div class="sum-cell col-sum" data-col="${col - 1}">
                             ${colSums[col - 1]}
                             <span class="current-sum"></span>
                         </div>`
@@ -246,7 +246,7 @@ $(document).ready(function () {
                 } else if (col === 0) {
                     // Row sum cell with current sum span
                     $container.append(
-                        `<div class="sum-cell row-sum" data-row="${row - 1}" style="position:relative;">
+                        `<div class="sum-cell row-sum" data-row="${row - 1}">
                             ${rowSums[row - 1]}
                             <span class="current-sum"></span>
                         </div>`
