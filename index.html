@@ -193,6 +193,15 @@
                 <input type="checkbox" id="toggle-current-sum" checked style="vertical-align:middle; margin-right:0.3em;">
                 Show current sums
             </label>
+            <br>
+            <label style="margin-left:1em; font-size:0.95em; user-select:none;">
+                <input type="checkbox" id="static-grid-size" style="vertical-align:middle; margin-right:0.3em;">
+                Static Grid Size
+            </label>
+            <div id="static-grid-size-slider-wrap" style="display:none; margin: 0.5em 0 1em 2em;">
+                <input type="range" id="static-grid-size-slider" min="1" max="12" value="7" style="vertical-align:middle;">
+                <span id="static-grid-size-value" style="margin-left:0.5em; font-weight:bold;">7</span>
+            </div>
             <input id="seed-input" style="font-size:1.1rem; width:80%; padding:0.5em; margin-bottom:1em;" readonly />
             <br>
             <button id="copy-seed-btn" class="btn btn-yellow" style="font-size:1rem;">Copy</button>
