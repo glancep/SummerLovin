@@ -4,18 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SummerLovin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
             padding: 0 1rem;
-            font-family: Arial, sans-serif;
+            font-family: 'Inter', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
             font-size: 1rem;
             line-height: 1.5;
             background: #fffbe7;
         }
         h1 {
             font-size: 2rem;
-            margin-top: 1.5rem;
+            margin: 0.5rem;
             text-align: center;
         }
         #game-grid {
@@ -80,11 +81,25 @@
             color: #fff !important;
             transition: background 0.2s;
         }
+        .grid-cell.solved {
+            background: #b3e5fc !important;
+        }
+        .current-sum {
+            position: absolute;
+            top: 2px;
+            right: 6px;
+            font-size: 0.6em;
+            color: #000;
+            font-weight: 400;
+            font-family: 'Inter', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+            opacity: 0.85;
+            letter-spacing: 0.01em;
+        }
         @media (max-width: 600px), (max-height: 600px) {
             #game-grid {
-                width: min(98vw, 70vh);
-                height: min(98vw, 70vh);
-                max-width: 98vw;
+                width: min(90vw, 70vh);
+                height: min(90vw, 70vh);
+                max-width: 90vw;
                 max-height: 70vh;
             }
             .grid-cell, .sum-cell {
@@ -98,7 +113,7 @@
     <div style="text-align:center; margin-bottom:1rem;">
         <button id="seed-btn" style="font-size:1.2rem; padding:0.5em 1em; border-radius:6px; border:1px solid #ccc; background:#fff; cursor:pointer; margin-right:0.5em;">🔗</button>
         <button id="toggle-mode" style="font-size:1.5rem; padding:0.5em 1em; border-radius:6px; border:1px solid #ccc; background:#fff; cursor:pointer;"></button>
-        <span id="lives" style="font-size:1.5rem; vertical-align:middle; margin-left:1em;">❤️❤️❤️</span>
+        <div id="lives" style="font-size:1.5rem; vertical-align:middle; margin-left:1em;">❤️❤️❤️</div>
     </div>
     <div id="game-grid"></div>
     <!-- Popup for game over -->
