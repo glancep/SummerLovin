@@ -7,7 +7,7 @@ $(document).ready(function () {
     const maxLives = 3;
 
     // --- State ---
-    let mode = "pencil"; // "pencil" or "eraser"
+    let pencilMode = true;
     let numbers, decoys;
     let livesLeft = maxLives;
     let gameSeed = null;
@@ -54,9 +54,9 @@ $(document).ready(function () {
 
     // --- Toggle mode function and background color ---
     function toggleMode() {
-        mode = (mode === "pencil") ? "eraser" : "pencil";
-        $('#toggle-mode').html(mode === "pencil" ? "✏️" : "🧽");
-        if (mode === "pencil") {
+        pencilMode = !pencilMode;
+        $('#toggle-mode').html(pencilMode ? "✏️" : "🧽");
+        if (pencilMode) {
             $('body').css('background', '#fffbe7');
         } else {
             $('body').css('background', '#e3f2fd');
@@ -67,14 +67,14 @@ $(document).ready(function () {
     toggleMode();
 
     // --- Toggle mode by clicking on background (not grid/board) ---
+    // Allow toggle if clicking on body, except if inside #game-grid and NOT on a solved cell
     $('body').on('click', function (e) {
-        // Only toggle if not clicking inside #game-grid or on a button/input/popup
+        $target = $(e.target);
         if (
-            $(e.target).closest('#game-grid').length === 0 &&
-            $(e.target).closest('button').length === 0 &&
-            $(e.target).closest('#seed-popup').length === 0 &&
-            $(e.target).closest('#game-over-popup').length === 0 &&
-            $(e.target).closest('input').length === 0
+            $target.closest('button').length === 0 &&
+            $target.closest('#seed-popup').length === 0 &&
+            $target.closest('#game-over-popup').length === 0 &&
+            $target.closest('input').length === 0
         ) {
             toggleMode();
         }
@@ -346,19 +346,19 @@ $(document).ready(function () {
     }
 
     function bindCellClicks() {
-        $('#game-grid').off('click').on('click', '.grid-cell', function () {
+        $('#game-grid').off('click').on('click', '.grid-cell', function (e) {
             if (livesLeft <= 0) return;
             const $cell = $(this);
             if ($cell.hasClass('selected') || $cell.hasClass('erased')) return; // Already acted on
 
             const isDecoy = $cell.data('decoy') === true || $cell.data('decoy') === "true";
             let correct = false;
-            if (mode === "pencil") {
+            if (pencilMode) {
                 if (!isDecoy) {
                     $cell.addClass('selected');
                     correct = true;
                 }
-            } else if (mode === "eraser") {
+            } else if (!pencilMode) {
                 if (isDecoy) {
                     $cell.addClass('erased');
                     correct = true;
@@ -369,9 +369,13 @@ $(document).ready(function () {
                 loseLife();
             } else {
                 // Check for solved rows/cols
+                $cell.addClass('correct');
                 checkSolvedRowsAndCols();
             }
             updateCurrentSums();
+
+            // Prevent toggle when an active cell is clicked
+            e.stopPropagation();
         });
     }
 
