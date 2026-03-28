@@ -94,11 +94,30 @@
 <body>
     <h1>Welcome to SummerLovin</h1>
     <div style="text-align:center; margin-bottom:1rem;">
-        <button id="toggle-mode" style="font-size:1.2rem; padding:0.5em 1em; border-radius:6px; border:1px solid #ccc; background:#ffe082; cursor:pointer;">
-            ✅ Check Mode
-        </button>
+        <button id="seed-btn" style="font-size:1.2rem; padding:0.5em 1em; border-radius:6px; border:1px solid #ccc; background:#fff; cursor:pointer; margin-right:0.5em;">🔗</button>
+        <button id="toggle-mode" style="font-size:1.5rem; padding:0.5em 1em; border-radius:6px; border:1px solid #ccc; background:#fff; cursor:pointer;"></button>
+        <span id="lives" style="font-size:1.5rem; vertical-align:middle; margin-left:1em;">❤️❤️❤️</span>
     </div>
     <div id="game-grid"></div>
+    <!-- Popup for game over -->
+    <div id="game-over-popup" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:12px; padding:2em 2em; text-align:center; max-width:90vw; margin:auto; box-shadow:0 4px 24px rgba(0,0,0,0.15);">
+            <div style="font-size:2rem; margin-bottom:1rem;">Oh, snap—guess your summer love left you! 💔</div>
+            <button id="restart-btn" style="font-size:1.2rem; padding:0.5em 1.5em; border-radius:8px; border:1px solid #ccc; background:#ffe082; cursor:pointer;">Restart</button>
+        </div>
+    </div>
+    <!-- Popup for seed -->
+    <div id="seed-popup" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); z-index:2000; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:12px; padding:2em 2em; text-align:center; max-width:90vw; margin:auto; box-shadow:0 4px 24px rgba(0,0,0,0.15);">
+            <div style="font-size:1.2rem; margin-bottom:1rem;">Game Seed</div>
+            <input id="seed-input" style="font-size:1.1rem; width:80%; padding:0.5em; margin-bottom:1em;" readonly />
+            <br>
+            <button id="copy-seed-btn" style="font-size:1rem; margin-right:1em; border-radius:6px; border:1px solid #ccc; background:#ffe082; cursor:pointer;">Copy</button>
+            <button id="edit-seed-btn" style="font-size:1rem; margin-right:1em; border-radius:6px; border:1px solid #ccc; background:#ffe082; cursor:pointer;">Edit</button>
+            <button id="apply-seed-btn" style="font-size:1rem; margin-right:1em; border-radius:6px; border:1px solid #ccc; background:#ffe082; cursor:pointer; display:none;">Apply</button>
+            <button id="close-seed-btn" style="font-size:1rem; border-radius:6px; border:1px solid #ccc; background:#fff; cursor:pointer;">Close</button>
+        </div>
+    </div>
     <!-- jQuery (latest version from Google CDN) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <!-- SummerLovin JavaScript file -->

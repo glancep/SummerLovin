@@ -3,74 +3,190 @@ $(document).ready(function () {
     const gridSize = 7;
     const decoyProbability = 0.25;
     const easyDecoyProbability = 0.75;
-    const easyRowColDecoyProbability = 0.3;
+    let easyRowColDecoyProbability = 0.3;
+    const maxLives = 3;
 
     // --- State ---
-    let mode = "check"; // "check" or "x"
+    let mode = "pencil"; // "pencil" or "eraser"
     let numbers, decoys;
+    let livesLeft = maxLives;
+    let gameSeed = null;
+    let lastSeed = null;
+
+    // --- Seeded random number generator (mulberry32) ---
+    function mulberry32(a) {
+        return function () {
+            var t = a += 0x6D2B79F5;
+            t = Math.imul(t ^ t >>> 15, t | 1);
+            t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+            return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        }
+    }
+
+    // --- Seed helpers ---
+    function makeSeedString(prob, seed) {
+        return `${prob}:${seed}`;
+    }
+    function parseSeedString(seedStr) {
+        const parts = seedStr.split(":");
+        if (parts.length !== 2) return null;
+        const prob = parseFloat(parts[0]);
+        if (isNaN(prob)) return null;
+        return { prob, seed: parts[1] };
+    }
+    function randomSeed() {
+        // 8-char alphanumeric
+        return Math.random().toString(36).substr(2, 8);
+    }
 
     // --- Main ---
-    startGame();
+    newRandomSeedAndStart();
 
     // --- UI: Toggle Button ---
-    $('#toggle-mode').on('click', function () {
-        mode = (mode === "check") ? "x" : "check";
-        $(this).html(mode === "check" ? "✅ Check Mode" : "❌ X Mode");
+    $('#toggle-mode')
+        .css({ background: "#fff" })
+        .on('click', function () {
+            mode = (mode === "pencil") ? "eraser" : "pencil";
+            $(this).html(mode === "pencil" ? "✏️" : "🧽");
+        })
+        .html("✏️");
+
+    // --- UI: Seed Button ---
+    $('#seed-btn').on('click', function () {
+        $('#seed-input').val(gameSeed).prop('readonly', true);
+        $('#apply-seed-btn').hide();
+        $('#edit-seed-btn').show();
+        $('#seed-popup').fadeIn(150);
+    });
+    $('#close-seed-btn').on('click', function () {
+        $('#seed-popup').fadeOut(150);
+    });
+    $('#copy-seed-btn').on('click', function () {
+        navigator.clipboard.writeText($('#seed-input').val());
+        $(this).text('Copied!');
+        setTimeout(() => $(this).text('Copy'), 1000);
+    });
+    $('#edit-seed-btn').on('click', function () {
+        $('#seed-input').prop('readonly', false).focus();
+        $('#apply-seed-btn').show();
+        $(this).hide();
+    });
+    $('#apply-seed-btn').on('click', function () {
+        const val = $('#seed-input').val();
+        const parsed = parseSeedString(val);
+        if (!parsed) {
+            alert("Invalid seed format. Example: 0.3:abcd1234");
+            return;
+        }
+        easyRowColDecoyProbability = parsed.prob;
+        gameSeed = val;
+        lastSeed = val;
+        $('#seed-popup').fadeOut(150);
+        startGame(true);
+    });
+
+    // --- UI: Restart Button ---
+    $('#game-over-popup').on('click', '#restart-btn', function () {
+        $('#game-over-popup').hide();
+        startGame(true);
     });
 
     // --- Functions ---
-    function startGame() {
-        numbers = generateNumbers(gridSize);
-        const { easyRows, easyCols } = generateEasyRowsCols(gridSize, easyRowColDecoyProbability);
-        decoys = generateDecoyMap(gridSize, easyRows, easyCols, decoyProbability, easyDecoyProbability);
-        ensureAtLeastOneRealPerRowCol(decoys);
+    function newRandomSeedAndStart() {
+        easyRowColDecoyProbability = 0.3;
+        const seed = randomSeed();
+        gameSeed = makeSeedString(easyRowColDecoyProbability, seed);
+        lastSeed = gameSeed;
+        startGame(false);
+    }
+
+    function startGame(useLastSeed) {
+        let seedObj;
+        if (useLastSeed && lastSeed) {
+            seedObj = parseSeedString(lastSeed);
+        } else {
+            seedObj = parseSeedString(gameSeed);
+        }
+        if (!seedObj) {
+            // fallback
+            easyRowColDecoyProbability = 0.3;
+            const seed = randomSeed();
+            gameSeed = makeSeedString(easyRowColDecoyProbability, seed);
+            lastSeed = gameSeed;
+            seedObj = parseSeedString(gameSeed);
+        }
+        easyRowColDecoyProbability = seedObj.prob;
+        gameSeed = makeSeedString(easyRowColDecoyProbability, seedObj.seed);
+        lastSeed = gameSeed;
+
+        // Use seeded RNG
+        const rand = mulberry32(hashCode(seedObj.seed));
+
+        numbers = generateNumbers(gridSize, rand);
+        const { easyRows, easyCols } = generateEasyRowsCols(gridSize, easyRowColDecoyProbability, rand);
+        decoys = generateDecoyMap(gridSize, easyRows, easyCols, decoyProbability, easyDecoyProbability, rand);
+        ensureAtLeastOneRealPerRowCol(decoys, rand);
         const rowSums = calculateRowSums(numbers, decoys);
         const colSums = calculateColSums(numbers, decoys);
         renderGrid($('#game-grid'), gridSize, numbers, decoys, rowSums, colSums);
         bindCellClicks();
+        livesLeft = maxLives;
+        updateLives();
     }
 
-    function generateNumbers(size) {
+    function hashCode(str) {
+        // Simple hash for string to int
+        let hash = 0, i, chr;
+        if (str.length === 0) return hash;
+        for (i = 0; i < str.length; i++) {
+            chr = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + chr;
+            hash |= 0;
+        }
+        return hash;
+    }
+
+    function generateNumbers(size, rand) {
         const arr = [];
         for (let row = 0; row < size; row++) {
             arr[row] = [];
             for (let col = 0; col < size; col++) {
-                arr[row][col] = Math.floor(Math.random() * 9) + 1;
+                arr[row][col] = Math.floor((rand ? rand() : Math.random()) * 9) + 1;
             }
         }
         return arr;
     }
 
-    function generateEasyRowsCols(size, easyProb) {
+    function generateEasyRowsCols(size, easyProb, rand) {
         const easyRows = [];
         const easyCols = [];
         for (let row = 0; row < size; row++) {
-            easyRows[row] = Math.random() < easyProb;
+            easyRows[row] = (rand ? rand() : Math.random()) < easyProb;
         }
         for (let col = 0; col < size; col++) {
-            easyCols[col] = Math.random() < easyProb;
+            easyCols[col] = (rand ? rand() : Math.random()) < easyProb;
         }
         return { easyRows, easyCols };
     }
 
-    function generateDecoyMap(size, easyRows, easyCols, decoyProb, easyDecoyProb) {
+    function generateDecoyMap(size, easyRows, easyCols, decoyProb, easyDecoyProb, rand) {
         const decoys = [];
         for (let row = 0; row < size; row++) {
             decoys[row] = [];
             for (let col = 0; col < size; col++) {
                 const prob = (easyRows[row] || easyCols[col]) ? easyDecoyProb : decoyProb;
-                decoys[row][col] = Math.random() < prob;
+                decoys[row][col] = (rand ? rand() : Math.random()) < prob;
             }
         }
         return decoys;
     }
 
-    function ensureAtLeastOneRealPerRowCol(decoys) {
+    function ensureAtLeastOneRealPerRowCol(decoys, rand) {
         const size = decoys.length;
         // Ensure each row has at least one real cell
         for (let row = 0; row < size; row++) {
             if (decoys[row].every(isDecoy => isDecoy)) {
-                const realCol = Math.floor(Math.random() * size);
+                const realCol = Math.floor((rand ? rand() : Math.random()) * size);
                 decoys[row][realCol] = false;
             }
         }
@@ -84,7 +200,7 @@ $(document).ready(function () {
                 }
             }
             if (allDecoy) {
-                const realRow = Math.floor(Math.random() * size);
+                const realRow = Math.floor((rand ? rand() : Math.random()) * size);
                 decoys[realRow][col] = false;
             }
         }
@@ -136,22 +252,26 @@ $(document).ready(function () {
 
     function bindCellClicks() {
         $('#game-grid').off('click').on('click', '.grid-cell', function () {
+            if (livesLeft <= 0) return;
             const $cell = $(this);
             if ($cell.hasClass('selected') || $cell.hasClass('faded')) return; // Already acted on
 
             const isDecoy = $cell.data('decoy') === true || $cell.data('decoy') === "true";
-            if (mode === "check") {
+            let correct = false;
+            if (mode === "pencil") {
                 if (!isDecoy) {
                     $cell.addClass('selected');
-                } else {
-                    flashWrong($cell);
+                    correct = true;
                 }
-            } else if (mode === "x") {
+            } else if (mode === "eraser") {
                 if (isDecoy) {
                     $cell.addClass('faded').text('');
-                } else {
-                    flashWrong($cell);
+                    correct = true;
                 }
+            }
+            if (!correct) {
+                flashWrong($cell);
+                loseLife();
             }
         });
     }
@@ -161,5 +281,26 @@ $(document).ready(function () {
         setTimeout(() => {
             $cell.removeClass('flash-wrong');
         }, 300);
+    }
+
+    function updateLives() {
+        let hearts = "";
+        for (let i = 0; i < livesLeft; i++) hearts += "❤️";
+        for (let i = 0; i < maxLives - livesLeft; i++) hearts += "🤍";
+        $('#lives').html(hearts);
+    }
+
+    function loseLife() {
+        if (livesLeft > 0) {
+            livesLeft--;
+            updateLives();
+            if (livesLeft === 0) {
+                setTimeout(showGameOver, 350);
+            }
+        }
+    }
+
+    function showGameOver() {
+        $('#game-over-popup').show();
     }
 });
