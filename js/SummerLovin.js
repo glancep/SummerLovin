@@ -238,7 +238,7 @@ $(document).ready(function () {
                 } else if (row === 0) {
                     // Column sum cell with current sum span
                     $container.append(
-                        `<div class="sum-cell col-sum" data-col="${col - 1}" style="position:relative;">
+                        `<div class="sum-cell col-sum" data-col="${col - 1}">
                             ${colSums[col - 1]}
                             <span class="current-sum"></span>
                         </div>`
@@ -246,7 +246,7 @@ $(document).ready(function () {
                 } else if (col === 0) {
                     // Row sum cell with current sum span
                     $container.append(
-                        `<div class="sum-cell row-sum" data-row="${row - 1}" style="position:relative;">
+                        `<div class="sum-cell row-sum" data-row="${row - 1}">
                             ${rowSums[row - 1]}
                             <span class="current-sum"></span>
                         </div>`
@@ -293,7 +293,7 @@ $(document).ready(function () {
         $('#game-grid').off('click').on('click', '.grid-cell', function () {
             if (livesLeft <= 0) return;
             const $cell = $(this);
-            if ($cell.hasClass('selected') || $cell.hasClass('faded')) return; // Already acted on
+            if ($cell.hasClass('selected') || $cell.hasClass('erased')) return; // Already acted on
 
             const isDecoy = $cell.data('decoy') === true || $cell.data('decoy') === "true";
             let correct = false;
@@ -304,7 +304,7 @@ $(document).ready(function () {
                 }
             } else if (mode === "eraser") {
                 if (isDecoy) {
-                    $cell.addClass('faded').text('');
+                    $cell.addClass('erased');
                     correct = true;
                 }
             }
@@ -331,7 +331,7 @@ $(document).ready(function () {
                     solved = false;
                     break;
                 }
-                if (isDecoy && !$cell.hasClass('faded')) {
+                if (isDecoy && !$cell.hasClass('erased')) {
                     solved = false;
                     break;
                 }
@@ -353,7 +353,7 @@ $(document).ready(function () {
                     solved = false;
                     break;
                 }
-                if (isDecoy && !$cell.hasClass('faded')) {
+                if (isDecoy && !$cell.hasClass('erased')) {
                     solved = false;
                     break;
                 }
