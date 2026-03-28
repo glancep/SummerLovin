@@ -59,7 +59,7 @@ $(document).ready(function () {
         if (pencilMode) {
             $('body').css('background', '#fffbe7');
         } else {
-            $('body').css('background', '#e3f2fd');
+            $('body').css('background', '#55809e');
         }
     }
 
@@ -90,11 +90,31 @@ $(document).ready(function () {
         newRandomSeedAndStart();
     });
 
+    // --- Static Grid Size UI ---
+    $('#static-grid-size').on('change', function () {
+        if (this.checked) {
+            $('#static-grid-size-slider-wrap').show();
+        } else {
+            $('#static-grid-size-slider-wrap').hide();
+        }
+    });
+    $('#static-grid-size-slider').on('input change', function () {
+        $('#static-grid-size-value').text(this.value);
+    });
+
     // --- UI: Settings (gear) Button ---
     $('#settings-btn').on('click', function () {
         $('#seed-input').val(gameSeed).prop('readonly', true);
         $('#apply-seed-btn').hide();
         $('#edit-seed-btn').show();
+        // Set slider and checkbox to match current state
+        if ($('#static-grid-size').prop('checked')) {
+            $('#static-grid-size-slider-wrap').show();
+        } else {
+            $('#static-grid-size-slider-wrap').hide();
+        }
+        $('#static-grid-size-slider').val(gridSize);
+        $('#static-grid-size-value').text(gridSize);
         $('#settings-popup').fadeIn(150);
     });
 
@@ -120,15 +140,26 @@ $(document).ready(function () {
             return;
         }
         easyRowColDecoyProbability = parsed.prob;
-        gridSize = parsed.size;
-        gameSeed = val;
-        lastSeed = val;
+        // If static grid size is checked, override with slider value
+        if ($('#static-grid-size').prop('checked')) {
+            gridSize = parseInt($('#static-grid-size-slider').val(), 10);
+        } else {
+            gridSize = parsed.size;
+        }
+        gameSeed = makeSeedString(easyRowColDecoyProbability, gridSize, parsed.seed);
+        lastSeed = gameSeed;
         $('#settings-popup').fadeOut(150);
+        saveSeedSettings();
         startGame(true);
     });
     $('#randomize-seed-btn').on('click', function () {
         // Generate a new random seed, probability, and size, apply and close popup
-        const size = Math.floor(Math.random() * 4) + 7;
+        let size;
+        if ($('#static-grid-size').prop('checked')) {
+            size = parseInt($('#static-grid-size-slider').val(), 10);
+        } else {
+            size = Math.floor(Math.random() * 4) + 7;
+        }
         const seed = randomSeed();
         const prob = Math.round((Math.random() * 0.8 + 0.1) * 10) / 10;
         easyRowColDecoyProbability = prob;
@@ -140,12 +171,14 @@ $(document).ready(function () {
         $('#apply-seed-btn').hide();
         $('#edit-seed-btn').show();
         $('#settings-popup').fadeOut(150);
+        saveSeedSettings();
         startGame(false);
     });
 
     // --- UI: Restart Button ---
     $('#game-over-popup').on('click', '#restart-btn', function () {
         $('#game-over-popup').hide();
+        saveSeedSettings();
         startGame(true);
     });
 
@@ -518,7 +551,6 @@ $(document).ready(function () {
                 let c = confetti[i];
                 c.tiltAngle += c.tiltAngleIncremental;
                 c.y += (Math.cos(angle + c.d) + 3 + c.r / 2) / 2;
-                c.x += Math.sin(angle);
                 c.tilt = Math.sin(c.tiltAngle - (i % 3)) * 15;
 
                 ctx.beginPath();
@@ -529,24 +561,14 @@ $(document).ready(function () {
                 ctx.stroke();
             }
 
-            // Remove confetti that falls off screen and add new ones
-            for (let i = 0; i < confetti.length; i++) {
-                if (confetti[i].y > canvas.height + 20) {
-                    confetti[i].x = Math.random() * canvas.width;
-                    confetti[i].y = -10;
-                }
-            }
-
             animationFrame = requestAnimationFrame(drawConfetti);
         }
 
         drawConfetti();
 
-        // Remove confetti after 2.5 seconds
         setTimeout(() => {
             cancelAnimationFrame(animationFrame);
-            $canvas.fadeOut(400, function () { $(this).remove(); });
-        }, 2500);
+        }, 10000);
     }
 
     // Add this function to check if the board is fully solved
@@ -619,4 +641,151 @@ $(document).ready(function () {
             }, 550);
         }
     }
+
+    // --- Local Storage Helpers ---
+    function saveSettings() {
+        const settings = {
+            gameSeed,
+            lastSeed,
+            gridSize,
+            easyRowColDecoyProbability,
+            showCurrentSums: $('#toggle-current-sum').prop('checked'),
+            staticGridSize: $('#static-grid-size').prop('checked'),
+            staticGridSizeValue: $('#static-grid-size-slider').val()
+        };
+        localStorage.setItem('summerlovin-settings', JSON.stringify(settings));
+    }
+
+    function loadSettings() {
+        const settings = JSON.parse(localStorage.getItem('summerlovin-settings') || '{}');
+        if (settings.gameSeed) gameSeed = settings.gameSeed;
+        if (settings.lastSeed) lastSeed = settings.lastSeed;
+        if (settings.gridSize) gridSize = settings.gridSize;
+        if (settings.easyRowColDecoyProbability) easyRowColDecoyProbability = settings.easyRowColDecoyProbability;
+        if (typeof settings.showCurrentSums === 'boolean') {
+            $('#toggle-current-sum').prop('checked', settings.showCurrentSums);
+            $('#game-grid').toggleClass('disable-current-sum', !settings.showCurrentSums);
+        }
+        if (typeof settings.staticGridSize === 'boolean') {
+            $('#static-grid-size').prop('checked', settings.staticGridSize);
+            if (settings.staticGridSize) {
+                $('#static-grid-size-slider-wrap').show();
+            } else {
+                $('#static-grid-size-slider-wrap').hide();
+            }
+        }
+        if (settings.staticGridSizeValue) {
+            $('#static-grid-size-slider').val(settings.staticGridSizeValue);
+            $('#static-grid-size-value').text(settings.staticGridSizeValue);
+        }
+    }
+
+    // --- Save settings on relevant changes ---
+    $('#toggle-current-sum').on('change', function () {
+        $('#game-grid').toggleClass('disable-current-sum');
+        saveSettings();
+    });
+    $('#static-grid-size').on('change', function () {
+        if (this.checked) {
+            $('#static-grid-size-slider-wrap').show();
+        } else {
+            $('#static-grid-size-slider-wrap').hide();
+        }
+        saveSettings();
+    });
+    $('#static-grid-size-slider').on('input change', function () {
+        $('#static-grid-size-value').text(this.value);
+        saveSettings();
+    });
+
+    // Save settings after seed/game changes
+    function saveSeedSettings() {
+        saveSettings();
+    }
+
+    // --- UI: Settings (gear) Button ---
+    $('#settings-btn').on('click', function () {
+        $('#seed-input').val(gameSeed).prop('readonly', true);
+        $('#apply-seed-btn').hide();
+        $('#edit-seed-btn').show();
+        // Set slider and checkbox to match current state
+        if ($('#static-grid-size').prop('checked')) {
+            $('#static-grid-size-slider-wrap').show();
+        } else {
+            $('#static-grid-size-slider-wrap').hide();
+        }
+        $('#static-grid-size-slider').val(gridSize);
+        $('#static-grid-size-value').text(gridSize);
+        $('#settings-popup').fadeIn(150);
+    });
+
+    // --- UI: Settings Popup Buttons ---
+    $('#close-settings-btn').on('click', function () {
+        $('#settings-popup').fadeOut(150);
+        saveSettings();
+    });
+    $('#copy-seed-btn').on('click', function () {
+        navigator.clipboard.writeText($('#seed-input').val());
+        $(this).text('Copied!');
+        setTimeout(() => $(this).text('Copy'), 1000);
+    });
+    $('#edit-seed-btn').on('click', function () {
+        $('#seed-input').prop('readonly', false).focus();
+        $('#apply-seed-btn').show();
+        $(this).hide();
+    });
+    $('#apply-seed-btn').on('click', function () {
+        const val = $('#seed-input').val();
+        const parsed = parseSeedString(val);
+        if (!parsed) {
+            alert("Invalid seed format. Example: 0.3:7:abcd1234");
+            return;
+        }
+        easyRowColDecoyProbability = parsed.prob;
+        // If static grid size is checked, override with slider value
+        if ($('#static-grid-size').prop('checked')) {
+            gridSize = parseInt($('#static-grid-size-slider').val(), 10);
+        } else {
+            gridSize = parsed.size;
+        }
+        gameSeed = makeSeedString(easyRowColDecoyProbability, gridSize, parsed.seed);
+        lastSeed = gameSeed;
+        $('#settings-popup').fadeOut(150);
+        saveSeedSettings();
+        startGame(true);
+    });
+    $('#randomize-seed-btn').on('click', function () {
+        // Generate a new random seed, probability, and size, apply and close popup
+        let size;
+        if ($('#static-grid-size').prop('checked')) {
+            size = parseInt($('#static-grid-size-slider').val(), 10);
+        } else {
+            size = Math.floor(Math.random() * 4) + 7;
+        }
+        const seed = randomSeed();
+        const prob = Math.round((Math.random() * 0.8 + 0.1) * 10) / 10;
+        easyRowColDecoyProbability = prob;
+        gridSize = size;
+        gameSeed = makeSeedString(easyRowColDecoyProbability, gridSize, seed);
+        lastSeed = gameSeed;
+        $('#seed-input').val(gameSeed);
+        $('#seed-input').prop('readonly', true);
+        $('#apply-seed-btn').hide();
+        $('#edit-seed-btn').show();
+        $('#settings-popup').fadeOut(150);
+        saveSeedSettings();
+        startGame(false);
+    });
+
+    // --- UI: Restart Button ---
+    $('#game-over-popup').on('click', '#restart-btn', function () {
+        $('#game-over-popup').hide();
+        saveSeedSettings();
+        startGame(true);
+    });
+
+    // --- Main ---
+    // Load settings before starting game
+    loadSettings();
+    newRandomSeedAndStart();
 });
