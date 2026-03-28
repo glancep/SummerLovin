@@ -121,8 +121,10 @@ $(document).ready(function () {
 
     // --- Functions ---
     function newRandomSeedAndStart() {
-        easyRowColDecoyProbability = 0.3;
+        // Generate a random seed and a random easyRowColDecoyProbability between 0.1 and 0.9 (rounded to 1 decimal)
         const seed = randomSeed();
+        const prob = Math.round((Math.random() * 0.8 + 0.1) * 10) / 10;
+        easyRowColDecoyProbability = prob;
         gameSeed = makeSeedString(easyRowColDecoyProbability, seed);
         lastSeed = gameSeed;
         startGame(false);
@@ -137,8 +139,9 @@ $(document).ready(function () {
         }
         if (!seedObj) {
             // fallback
-            easyRowColDecoyProbability = 0.3;
             const seed = randomSeed();
+            const prob = Math.round((Math.random() * 0.8 + 0.1) * 10) / 10;
+            easyRowColDecoyProbability = prob;
             gameSeed = makeSeedString(easyRowColDecoyProbability, seed);
             lastSeed = gameSeed;
             seedObj = parseSeedString(gameSeed);
