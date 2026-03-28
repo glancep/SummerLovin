@@ -59,7 +59,7 @@ $(document).ready(function () {
         if (pencilMode) {
             $('body').css('background', '#fffbe7');
         } else {
-            $('body').css('background', '#e3f2fd');
+            $('body').css('background', '#55809e');
         }
     }
 
