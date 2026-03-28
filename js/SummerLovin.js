@@ -272,8 +272,72 @@ $(document).ready(function () {
             if (!correct) {
                 flashWrong($cell);
                 loseLife();
+            } else {
+                // Check for solved rows/cols
+                checkSolvedRowsAndCols();
             }
         });
+    }
+
+    // --- New helper for solved rows/cols ---
+    function checkSolvedRowsAndCols() {
+        // Check each row
+        for (let row = 0; row < gridSize; row++) {
+            let solved = true;
+            for (let col = 0; col < gridSize; col++) {
+                const isDecoy = decoys[row][col];
+                const $cell = $(`.grid-cell[data-row=${row}][data-col=${col}]`);
+                if (!isDecoy && !$cell.hasClass('selected')) {
+                    solved = false;
+                    break;
+                }
+                if (isDecoy && !$cell.hasClass('faded')) {
+                    solved = false;
+                    break;
+                }
+            }
+            // If solved and not already cleared
+            const $sumCell = $(`.sum-cell.row-sum`).eq(row);
+            if (solved && $sumCell.text() !== "") {
+                $sumCell.text("");
+                flashRowOrCol(row, null);
+            }
+        }
+        // Check each column
+        for (let col = 0; col < gridSize; col++) {
+            let solved = true;
+            for (let row = 0; row < gridSize; row++) {
+                const isDecoy = decoys[row][col];
+                const $cell = $(`.grid-cell[data-row=${row}][data-col=${col}]`);
+                if (!isDecoy && !$cell.hasClass('selected')) {
+                    solved = false;
+                    break;
+                }
+                if (isDecoy && !$cell.hasClass('faded')) {
+                    solved = false;
+                    break;
+                }
+            }
+            // If solved and not already cleared
+            const $sumCell = $(`.sum-cell.col-sum`).eq(col);
+            if (solved && $sumCell.text() !== "") {
+                $sumCell.text("");
+                flashRowOrCol(null, col);
+            }
+        }
+    }
+
+    // --- Flash row or column ---
+    function flashRowOrCol(row, col) {
+        let $cells;
+        if (row !== null) {
+            $cells = $(`.grid-cell[data-row=${row}]`);
+            $cells.add($(`.sum-cell.row-sum`).eq(row));
+        } else if (col !== null) {
+            $cells = $(`.grid-cell[data-col=${col}]`);
+            $cells = $cells.add($(`.sum-cell.col-sum`).eq(col));
+        }
+        $cells.addClass('solved');
     }
 
     function flashWrong($cell) {
