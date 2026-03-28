@@ -87,10 +87,12 @@
             background: transparent;
             box-shadow: none;
         }
+        /*
         .grid-cell.decoy {
             background: #f8bbd0;
             color: #a00040;
         }
+        */
         .grid-cell.selected {
             background: #b2f2bb !important;
             color: #155724 !important;
@@ -116,6 +118,9 @@
             font-family: 'Inter', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
             opacity: 0.85;
             letter-spacing: 0.01em;
+        }
+        #game-grid.disable-current-sum .current-sum {
+            display: none;
         }
         .popup-overlay {
             display: none;
@@ -158,8 +163,8 @@
 <body>
     <h1>Welcome to SummerLovin</h1>
     <div class="controls">
-        <button id="settings-btn" class="btn">⚙️</button>
         <button id="toggle-mode" class="btn" style="font-size:1.5rem;"></button>
+        <button id="settings-btn" class="btn">⚙️</button>
         <div id="lives">❤️❤️❤️</div>
     </div>
     <div id="game-grid"></div>
@@ -181,16 +186,20 @@
         </div>
     </div>
     <!-- Popup for settings/seed -->
-    <div id="seed-popup" class="popup-overlay" style="z-index:2000;">
+    <div id="settings-popup" class="popup-overlay" style="z-index:2000;">
         <div class="popup-content">
-            <div style="font-size:1.2rem; margin-bottom:1rem;">Game Seed</div>
+            <h1>Settings</h1>
+            <label style="margin-left:1em; font-size:0.95em; user-select:none;">
+                <input type="checkbox" id="toggle-current-sum" checked style="vertical-align:middle; margin-right:0.3em;">
+                Show current sums
+            </label>
             <input id="seed-input" style="font-size:1.1rem; width:80%; padding:0.5em; margin-bottom:1em;" readonly />
             <br>
             <button id="copy-seed-btn" class="btn btn-yellow" style="font-size:1rem;">Copy</button>
             <button id="edit-seed-btn" class="btn btn-yellow" style="font-size:1rem;">Edit</button>
             <button id="apply-seed-btn" class="btn btn-yellow" style="font-size:1rem; display:none;">Apply</button>
             <button id="randomize-seed-btn" class="btn btn-yellow" style="font-size:1rem;">Randomize</button>
-            <button id="close-seed-btn" class="btn" style="font-size:1rem;">Close</button>
+            <button id="close-settings-btn" class="btn" style="font-size:1rem;">Close</button>
         </div>
     </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>

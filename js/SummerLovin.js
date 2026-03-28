@@ -63,6 +63,10 @@ $(document).ready(function () {
         }
     }
 
+    $('#toggle-current-sum').on('change', function () {
+        $('#game-grid').toggleClass('disable-current-sum');
+    });
+
     // Set initial background
     toggleMode();
 
@@ -72,7 +76,7 @@ $(document).ready(function () {
         $target = $(e.target);
         if (
             $target.closest('button').length === 0 &&
-            $target.closest('#seed-popup').length === 0 &&
+            $target.closest('#settings-popup').length === 0 &&
             $target.closest('#game-over-popup').length === 0 &&
             $target.closest('input').length === 0
         ) {
@@ -80,17 +84,23 @@ $(document).ready(function () {
         }
     });
 
+    // Win popup restart button
+    $('body').on('click', '#win-restart-btn', function () {
+        $('#game-win-popup').hide();
+        newRandomSeedAndStart();
+    });
+
     // --- UI: Settings (gear) Button ---
     $('#settings-btn').on('click', function () {
         $('#seed-input').val(gameSeed).prop('readonly', true);
         $('#apply-seed-btn').hide();
         $('#edit-seed-btn').show();
-        $('#seed-popup').fadeIn(150);
+        $('#settings-popup').fadeIn(150);
     });
 
-    // --- UI: Seed Popup Buttons ---
-    $('#close-seed-btn').on('click', function () {
-        $('#seed-popup').fadeOut(150);
+    // --- UI: Settings Popup Buttons ---
+    $('#close-settings-btn').on('click', function () {
+        $('#settings-popup').fadeOut(150);
     });
     $('#copy-seed-btn').on('click', function () {
         navigator.clipboard.writeText($('#seed-input').val());
@@ -113,7 +123,7 @@ $(document).ready(function () {
         gridSize = parsed.size;
         gameSeed = val;
         lastSeed = val;
-        $('#seed-popup').fadeOut(150);
+        $('#settings-popup').fadeOut(150);
         startGame(true);
     });
     $('#randomize-seed-btn').on('click', function () {
@@ -129,7 +139,7 @@ $(document).ready(function () {
         $('#seed-input').prop('readonly', true);
         $('#apply-seed-btn').hide();
         $('#edit-seed-btn').show();
-        $('#seed-popup').fadeOut(150);
+        $('#settings-popup').fadeOut(150);
         startGame(false);
     });
 
@@ -551,12 +561,6 @@ $(document).ready(function () {
         }
         return true;
     }
-
-    // Win popup restart button
-    $('body').on('click', '#win-restart-btn', function () {
-        $('#game-win-popup').hide();
-        newRandomSeedAndStart();
-    });
 
     // --- Modify checkSolvedRowsAndCols to trigger confetti and win popup ---
     function checkSolvedRowsAndCols() {
