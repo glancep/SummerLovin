@@ -40,9 +40,6 @@ $(document).ready(function () {
         return Math.random().toString(36).substr(2, 8);
     }
 
-    // --- Main ---
-    newRandomSeedAndStart();
-
     // --- UI: Toggle Button ---
     $('#toggle-mode')
         .css({ background: "#fff" })
@@ -648,7 +645,6 @@ $(document).ready(function () {
             gameSeed,
             lastSeed,
             gridSize,
-            easyRowColDecoyProbability,
             showCurrentSums: $('#toggle-current-sum').prop('checked'),
             staticGridSize: $('#static-grid-size').prop('checked'),
             staticGridSizeValue: $('#static-grid-size-slider').val()
@@ -661,7 +657,6 @@ $(document).ready(function () {
         if (settings.gameSeed) gameSeed = settings.gameSeed;
         if (settings.lastSeed) lastSeed = settings.lastSeed;
         if (settings.gridSize) gridSize = settings.gridSize;
-        if (settings.easyRowColDecoyProbability) easyRowColDecoyProbability = settings.easyRowColDecoyProbability;
         if (typeof settings.showCurrentSums === 'boolean') {
             $('#toggle-current-sum').prop('checked', settings.showCurrentSums);
             $('#game-grid').toggleClass('disable-current-sum', !settings.showCurrentSums);
@@ -678,6 +673,8 @@ $(document).ready(function () {
             $('#static-grid-size-slider').val(settings.staticGridSizeValue);
             $('#static-grid-size-value').text(settings.staticGridSizeValue);
         }
+
+        startGame(!settings.gameSeed);
     }
 
     // --- Save settings on relevant changes ---
@@ -787,5 +784,4 @@ $(document).ready(function () {
     // --- Main ---
     // Load settings before starting game
     loadSettings();
-    newRandomSeedAndStart();
 });
